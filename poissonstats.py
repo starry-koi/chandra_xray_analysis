@@ -16,7 +16,6 @@ from astropy.io import ascii
 import sys
 import os
 
-#import pdb
     
 def gehrelscl(n, cl):
     """  tmperr_lower, tmperr_upper = gehrelscl(n,cl)
@@ -54,7 +53,7 @@ def kraftcl(n, bg, cl):
     """ err_lo, err_high = mystats.kraftcl(n,b,cl)
 
     Returns Confidence limits from Bayesian Formulism of Kraft et al. 1991, ApJ, 374, 344.  Designed for Assigning confidence limits to X-ray detections.  If n total observed photons, and b background photons, returns minimum and maximum counts expected for 90%, 95%, or 99% confidence interval (cl).
-    Reads in CL tables located in /Users/rplotkin/science/catalogs/kraft91
+    Reads in CL tables located in the /kraft91 subfolder
     IN:
         n  = total number of observed counts (including background).  Must be an integer <=10'
         b  = expected number of background counts.  Can be non-integer, but must be <=10'
@@ -77,8 +76,6 @@ def kraftcl(n, bg, cl):
         print("Error: bg must be <=10")
         sys.exit(1)
 
-    #clrt = '/Users/rplotkin/science/catalogs/kraft91/'
-    #clrt = '/home/individual1/Downloads/kraft91/'
     current_dir = os.getcwd()
     clrt = current_dir + '/kraft91/' #should work as long as you don't move the kraft91 folder
     # Define Confidence table to use
@@ -120,5 +117,4 @@ def kraftcl(n, bg, cl):
     err_hi = np.interp(bg, nbg, nmax)    
 
     return err_lo, err_hi
-
 
