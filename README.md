@@ -44,7 +44,7 @@ The regions_and_images folder  -  This one needs some extra explanation. Multipl
 
 
 OTHER--------------------
-The code follows along with the procedure regarding X-ray data in https://arxiv.org/abs/1907.12585 and https://arxiv.org/abs/1502.06958. We use Dickey & Lockman maps for our galactic column densities, and we use a power-law spectral model with a photon index of 1.8. For a more in-depth explanation, see the code. There's a brief overview at the top, and the code is divided into sections - under each section is a slightly more in-depth explanation of what's happening, and then the individual comments should explain in detail what's going on.
+The code follows along with the procedure regarding X-ray data in [this 2019 paper](https://arxiv.org/abs/1907.12585) and [this 2021 paper](https://arxiv.org/abs/2105.05876). We use Dickey & Lockman maps for our galactic column densities, and we use a power-law spectral model with a photon index of 1.8. For a more in-depth explanation, see the code. There's a brief overview at the top, and the code is divided into sections - under each section is a slightly more in-depth explanation of what's happening, and then the individual comments should explain in detail what's going on.
 
 Common issues/quirks are explained in the overview in the code.
 
