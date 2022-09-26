@@ -1,3 +1,108 @@
+Chandra X-ray Data Analysis Pipeline
+===
+
+Python code with CIAO integration for analysis of Chandra X-ray images. Finds the X-ray flux (in a specific band) for sources within/around a galaxy. Currently only works if the galaxy you want to analyze is located at the aimpoint of the S3 chip (i.e. if it was the target of the observation). The coordinates of the aimpoint can be checked in the pdf included with the observation (assuming the data was downloaded from the Chandra archive).
+
+
+Setup
+---
+
+You will need to download and install the current version of [CIAO](https://cxc.cfa.harvard.edu/ciao/) (see the detailed installation instructions on their site). This script currently supports CIAO 4.14, which is the latest version as of time of writing.
+
+
+Brief Rundown of the Code
+---
+
+A more in-depth walkthrough is outlined in the header in the `xray_flux.py` code file, and details about specific sections and steps are detailed in the comments throughout the code. Here we provide a brief overview.
+
+We assume that the galaxy of interest is the target of the Chandra observation. We find the evt2 file in the OBSID folder and reprocess the data using the CIAO `chandra_repro` function, then restrict further analysis to the S3 chip (as that is the chip the aimpoint is located on). 
+
+We correct the astrometry of the Chandra image by running the CIAO functions `fluximage` and `wavdetect` on the Chandra image to obtain a list of sources and comparing these to a retrieved list of SDSS catalog sources. 
+
+We next filter the corrected image for background flares.
+
+We start our analysis on the cleaned, corrected Chandra image by filtering it to whatever band is specified by the `filter_check` variable and running `fluximage` and `wavdetect` to obtain a list of detected sources. We then restrict our interest to sources falling inside the region of the galaxy we care about, and find the source fluxes in the energy band specified by the `band_check` variable using the CIAO function `srcflux`.
+
+We calculate the errors on the detected source net counts and positions, etc.
+
+Finally, we save the results in a created results folder specific to the filtering band and flux band (`filter_check` and `band_check` variables, respectively).
+
+
+Variables the user will have to care about
+---
+
+You will have to go into the code file to change the values of at least some of these variables depending on what galaxies you are analyzing and how you are analyzing them. Comments in `xray_flux.py` give more detail, with an overview given here.
+
+
+`r50_all_gals` - the Petrosian 50% light radius for each galaxy, in order of ascending OBSID. This, along with the `gal_exclude_rad` variable, is used to define the 'area of interest' around each galaxy that we'll use to decide what sources we want to analyze.
+
+`gal_exclude_rad` - The galaxy region (that 'area of interest') is defined by taking each galaxy's specific r50 value and multiplying it by this. Currently it's set to 3, such that the galaxy region we focus on has a radius of 3\*r50, which seems to work well.
+
+`galdist` and `galdist_flag` - Used to automatically find luminosities from calculated source fluxes, the first is a list of the distances to each galaxy (in Mpc) while the second tells the code whether or not you want it to find luminosities.
+
+`band_check` - which energy band (in keV) you want to find source fluxes in; e.g. 0.5-2, 2-10, etc.
+
+`filter_check` - which energy band (in keV) you want to filter the cleaned, corrected image by before finding and analyzing X-ray sources.
+
+
+There are a number of other variables detailed in the code that can be changed by the user, but I've found that they rarely need to be changed from galaxy to galaxy and project to project.
+
+
+A Sample Walkthrough
+---
+
+Download your OBSIDs from the [Chandra Data Archive](https://cda.harvard.edu/chaser/) and make sure that the galaxies you want to analyze were the actual targets of the Chandra observations by checking the RA and Dec in the pdfs in each OBSID folder. Place the folder containing `xray_flux.py` in the same directory as the individual OBSID folders. Go into the `xray_flux.py` script and update the `r50_all_gals` and `galdist` variables, making sure the `galdist_flag` variable is set to True. Check that the `band_check` and `filter_check` variables are set to the desired energy ranges.
+
+Once everything is set up, open a terminal in the code directory and initialize CIAO, then run the code as
+
+	$./xray_flux.py
+
+As the code runs, it will print out where it is in the analysis process so you know it's working and what it's doing.
+
+Understanding the Output
+---
+
+
+Rerunning the Code
+---
+
+The code puts everything OBSID-specific (other than final results) in a file folder in the OBSID folder labelled /repro_\[band_check]-band__\[filter_check]-filter; e.g. if you're filtering from 2-7 keV and finding flux in the 2-10 keV band, the folder name will be /repro_2-10-band__2-7-filter. Rerunning the code after changing the `band_check` and/or `filter_check` variables will create a new /repro folder with the new flux/filter bands.
+
+
+In general, best practice is that if you change anything 
+
+When 
+In general, best practice is that if you change anything, best to delete the entire /repro folder in the OBSID folder corresponding to that run of the code.
+
+The code checks whether time-intensive tasks (such as `chandra_repro`, `fluximage`, `wavdetect`, and `srcflux`) have been run by checking to see if the relevant folder exists. If the folder does exist, then the code won't run those functions again. So if you have already run the code and would like to change some variables regarding those tasks and have the code redo that analysis, 
+
+
+Quirks
+---
+
+
+If something went wrong
+---
+
+* The code just stopped around the "Matching wavdetect and catalog sources" step
+	* Currently there's a bug with the CIAO `wcs_match` function and sometimes it fails and throws out a segfault that stops the code. This should only be happening when there were no matches between our found sources and the catalog sources. I've implemented a workaround - you can put the OBSID of the problem galaxy to the `skip_obsid_astrom` variable (as a string) to tell the code to skip running the `wcs_match` function.
+* I got an 'out of bounds' error for the `r50_all_gals` variable 
+	* Likely forgot to update the r50 values to match with the OBSIDs you downloaded. Need to have one r50 value per OBSID.
+* DS9 popped up and froze and the code timed out
+	* Sometimes DS9 just freezes, which is annoying. I've found that pressing the alt key gets DS9 to unfreeze so the code can proceed.
+* Error popped up saying something was wrong with 'from ciao_contrib.runtool import \*'
+	* Likely forgot to initialize CIAO before running the code. 
+* There are NaN values in the "expected background sources" column of the text files in the results folder
+	* The expected background sources can only be calculated for soft (0.5-2 keV) and hard (2-10 keV) bands, so if you're using a different band then this column will have NaNs in it as no value could be calculated.
+* The `fin_psf_srcs.bg.reg` and `fin_psf_srcs.src.reg` files aren't displaying correctly in DS9
+	* Those region files are in pixel coordinates, so they will only display correctly when used on the Chandra image associated with that observation (such as the `new_evt2.fits` file).
+* The `fin_psf_srcs.bg.reg` and `fin_psf_srcs.src.reg` files have regions that look like they intersect, is the flux from the intersecting part being used in both sources/backgrounds?
+	* No, overlapping parts of source/background region files are excluded from calculations.
+
+
+
+
+
 # xray_code
 Python code with CIAO integration for analysis of Chandra X-ray images
 
@@ -21,7 +126,7 @@ QUIRKS/TIPS---------------
 -The only thing you need to change when using the code with a different filter or flux band is the band_check and filter_check variables.
 -The code only works if the galaxy of interest is at the aimpoint of the S3 chip (i.e. if it was the target of the observation).
 -The astrometry won't get updated correctly if there is more than one ASOL file. This would be a fairly quick fix in the code if it were to occur, though.
--The expected background sources are only calculated for hard and soft band fluxes (2-10 and 0.5-2 keV, respectively), as those are the only bands the relevant equation is defined for. Other bands will have NaN in this column in the results folder.f
+-The expected background sources are only calculated for hard and soft band fluxes (2-10 and 0.5-2 keV, respectively), as those are the only bands the relevant equation is defined for. Other bands will have NaN in this column in the results folder.
 -Sometimes DS9 freezes (at least on my machine) e.g. while doing the astrometry matching. You can press the alt key to get it to unfreeze. No idea why.
 -Read the entire readme file and at least the overview in the script, as they answer most questions. The code is also highly commented, so cruising through that might help you solve your issue as well.
 
