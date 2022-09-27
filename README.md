@@ -1,7 +1,7 @@
 Chandra X-ray Data Analysis Pipeline
 ===
 
-Python code with CIAO integration for analysis of Chandra X-ray images. Finds the X-ray flux (in a specific band) for sources within/around a galaxy, following along with the procedure regarding X-ray data in [this 2019 paper](https://arxiv.org/abs/1907.12585) and [this 2021 paper](https://arxiv.org/abs/2105.05876). Currently only works if the galaxy you want to analyze is located at the aimpoint of the S3 chip (i.e. if it was the target of the observation). The coordinates of the aimpoint can be checked in the pdf included with the observation, assuming the data was downloaded from the Chandra archive.
+Analysis of Chandra X-ray images via python code with CIAO integration. Finds the X-ray flux (in a specific band) for sources within/around a galaxy, following along with the procedure regarding X-ray data in [this 2019 paper](https://arxiv.org/abs/1907.12585) and [this 2021 paper](https://arxiv.org/abs/2105.05876). Currently only works if the galaxy you want to analyze is located at the aimpoint of the S3 chip (i.e. if it was the target of the observation). The coordinates of the aimpoint can be checked in the pdf included with the observation, assuming the data was downloaded from the Chandra archive.
 
 Be sure to read the 'Rerunning the Code' section - there's an important warning there that if not heeded could mess up your analysis.
 
