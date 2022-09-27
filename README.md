@@ -1,7 +1,11 @@
 Chandra X-ray Data Analysis Pipeline
 ===
 
-Python code with CIAO integration for analysis of Chandra X-ray images. Finds the X-ray flux (in a specific band) for sources within/around a galaxy. Currently only works if the galaxy you want to analyze is located at the aimpoint of the S3 chip (i.e. if it was the target of the observation). The coordinates of the aimpoint can be checked in the pdf included with the observation (assuming the data was downloaded from the Chandra archive).
+Python code with CIAO integration for analysis of Chandra X-ray images. Finds the X-ray flux (in a specific band) for sources within/around a galaxy, following along with the procedure regarding X-ray data in [this 2019 paper](https://arxiv.org/abs/1907.12585) and [this 2021 paper](https://arxiv.org/abs/2105.05876). Currently only works if the galaxy you want to analyze is located at the aimpoint of the S3 chip (i.e. if it was the target of the observation). The coordinates of the aimpoint can be checked in the pdf included with the observation, assuming the data was downloaded from the Chandra archive.
+
+Be sure to read the 'Rerunning the Code' section - there's an important warning there that if not heeded could mess up your analysis.
+
+Also -- currently there is an error with CIAO's `wcs_match` function (used in the code to fix the astrometry) that causes a segfault when there are no matches between the source list and catalog source list. To (kind of) get by this, simply add the obsid of the problem galaxy to the `skip_obsid_astrom` variable *as a string* and it should skip right over the use of the `wcs_match` function for that galaxy. Note that this means the astrometry won't be changed for the galaxy, though since the bug should only be happening when there were no matches between our found sources and the catalog sources, this should be alright.
 
 
 Setup
@@ -15,17 +19,17 @@ Brief Rundown of the Code
 
 A more in-depth walkthrough is outlined in the header in the `xray_flux.py` code file, and details about specific sections and steps are detailed in the comments throughout the code. Here we provide a brief overview.
 
-We assume that the galaxy of interest is the target of the Chandra observation. We find the evt2 file in the OBSID folder and reprocess the data using the CIAO `chandra_repro` function, then restrict further analysis to the S3 chip (as that is the chip the aimpoint is located on). 
+* We assume that the galaxy of interest is the target of the Chandra observation. We find the evt2 file in the OBSID folder and reprocess the data using the CIAO `chandra_repro` function, then restrict further analysis to the S3 chip (as that is the chip the aimpoint is located on). This creates a /repro folder in the OBSID folder with the labelling schema /repro_\[band_check]-band__\[filter_check]-filter; e.g. if you're filtering from 2-7 keV and finding flux in the 2-10 keV band, the folder name will be /repro_2-10-band__2-7-filter. Any further created files and folders will be located in this /repro folder, save for the final results folder which is located in the code folder (with `xray_flux.py`). 
 
-We correct the astrometry of the Chandra image by running the CIAO functions `fluximage` and `wavdetect` on the Chandra image to obtain a list of sources and comparing these to a retrieved list of SDSS catalog sources. 
+* We correct the astrometry of the Chandra image by running the CIAO functions `fluximage` and `wavdetect` on the Chandra image to obtain a list of sources and comparing these to a retrieved list of SDSS catalog sources. 
 
-We next filter the corrected image for background flares.
+* We next filter the corrected image for background flares.
 
-We start our analysis on the cleaned, corrected Chandra image by filtering it to whatever band is specified by the `filter_check` variable and running `fluximage` and `wavdetect` to obtain a list of detected sources. We then restrict our interest to sources falling inside the region of the galaxy we care about, and find the source fluxes in the energy band specified by the `band_check` variable using the CIAO function `srcflux`.
+* We start our analysis on the cleaned, corrected Chandra image by filtering it to whatever band is specified by the `filter_check` variable and running `fluximage` and `wavdetect` to obtain a list of detected sources. We then restrict our interest to sources falling inside the region of the galaxy we care about, and find the source fluxes in the energy band specified by the `band_check` variable using the CIAO function `srcflux`.
 
-We calculate the errors on the detected source net counts and positions, etc.
+* We calculate the errors on the detected source net counts and positions, etc.
 
-Finally, we save the results in a created results folder specific to the filtering band and flux band (`filter_check` and `band_check` variables, respectively).
+* Finally, we save the results in a created results folder specific to the filtering band and flux band (`filter_check` and `band_check` variables, respectively). This folder is located in the code folder.
 
 
 Variables the user will have to care about
@@ -48,7 +52,7 @@ You will have to go into the code file to change the values of at least some of 
 There are a number of other variables detailed in the code that can be changed by the user, but I've found that they rarely need to be changed from galaxy to galaxy and project to project.
 
 
-A Sample Walkthrough
+A Sample Walkthrough of a Code Run
 ---
 
 Download your OBSIDs from the [Chandra Data Archive](https://cda.harvard.edu/chaser/) and make sure that the galaxies you want to analyze were the actual targets of the Chandra observations by checking the RA and Dec in the pdfs in each OBSID folder. Place the folder containing `xray_flux.py` in the same directory as the individual OBSID folders. Go into the `xray_flux.py` script and update the `r50_all_gals` and `galdist` variables, making sure the `galdist_flag` variable is set to True. Check that the `band_check` and `filter_check` variables are set to the desired energy ranges.
@@ -59,26 +63,68 @@ Once everything is set up, open a terminal in the code directory and initialize 
 
 As the code runs, it will print out where it is in the analysis process so you know it's working and what it's doing.
 
+
 Understanding the Output
 ---
+
+While the code makes and saves a number of intermediary files during analysis, these are all saved under the various /repro directories in each OBSID folder (see the 'Rerunning the Code' section for more detail). Everything that you're likely to care about is saved to the /results folder in the code directory - this folder is labelled according to the `band_check` and `filter_check` variables, similar to the /repro folders. Explanations of what each file contains is as follows:
+* `galaxy_data.txt`
+	* information that only changes from galaxy to galaxy - e.g. astrometry-related information, how many good/bad sources there were, etc.
+* `params.txt`
+	* the specific values of the parameters used in the run of the code. See the warning in this file (and under the 'Rerunning the Code' section in this ReadMe) about changing time-intensive-task related parameters without deleting the corresponding folders.
+* `src_all.txt`
+	* all the information regarding detected sources - counts, net counts, information on source and background apertures, etc.
+* `src_summary.txt`
+	* handpicked summary of the important information - net counts, fluxes, etc.
+* /cleaned_lightcurves
+	* images of the cleaned lightcurves for each galaxy (after removing background flares)
+* /regions_and_images
+	* Each galaxy will have a number of files associated with it (some depending on if any X-ray sources were detected in the galaxy region) as detailed below:
+	* `fin_psf_srcs.bg.reg`
+		* the background regions used for the sources. Note that when a background region intersected with a source region, the intersection was excluded from the background region in calculations. (This region will only display correctly when used on the Chandra .fits file associated with the observation, such as the `new_evt2.fits` file).
+	* `fin_psf_srcs.src.reg`
+		* the source regions used to calculate the fluxes. Note that when multiple source regions intersected, the intersection was excluded from both source regions for calculations. (This region has the same display requirements as `fin_psf_srcs.bg.reg`).
+	* `galaxy_region_ds9.reg`
+		* the region used to define 'in the galaxy' - fluxes are only calculated for sources inside this region.
+	* `new_evt2.fits`
+		* the filtered, cleaned, and astrometrically corrected X-ray images used to calculate fluxes
+	* `xray_ds9_regions.reg`
+		* X-ray source positions with positional errors and names (in RA, Dec).
 
 
 Rerunning the Code
 ---
 
-The code puts everything OBSID-specific (other than final results) in a file folder in the OBSID folder labelled /repro_\[band_check]-band__\[filter_check]-filter; e.g. if you're filtering from 2-7 keV and finding flux in the 2-10 keV band, the folder name will be /repro_2-10-band__2-7-filter. Rerunning the code after changing the `band_check` and/or `filter_check` variables will create a new /repro folder with the new flux/filter bands.
+If you are rerunning the code on the same galaxies with the same `band_check` and `filter_check` variables (but with other variables changed) you will need to delete the relevant /repro folder in the OBSID folder(s) and run the code fresh. This is because for various time-intensive tasks (`chandra_repro`, `fluximage`, `wavdetect`, and `srcflux`) the code checks to see if they've already been run by looking for specific folders. If it finds the folders it assumes the task has already been run and skips it. This means that if you change one of the variables related to one of those tasks, and don't delete the folder that the code is checking for, it will assume that the task has already been run and use the previous results (without using the updated variable) *and* it won't display a warning or anything. So this is your warning. 
 
+Folder names and what task they correspond to (the latter three are located in the /repro folder):
+* /repro_...
+	* `chandra_repro` - deleting this folder will have the code restart completely fresh.
+* /fixastrom_nogal
+	* astrometry-related `fluximage` and `wavdetect` - deleting this will force the code to redo the astrometry.
+* /minflux_calc
+	* `srcflux` used for calculating minimum fluxes for galaxies.
+* /analysis
+	* analysis-related `fluximage` and `wavdetect` - used to find sources for analysis - deleting this will force the code to re-find the sources.
+* /flux
+	* `srcflux` used for finding the fluxes from the detected sources.
 
-In general, best practice is that if you change anything 
-
-When 
-In general, best practice is that if you change anything, best to delete the entire /repro folder in the OBSID folder corresponding to that run of the code.
-
-The code checks whether time-intensive tasks (such as `chandra_repro`, `fluximage`, `wavdetect`, and `srcflux`) have been run by checking to see if the relevant folder exists. If the folder does exist, then the code won't run those functions again. So if you have already run the code and would like to change some variables regarding those tasks and have the code redo that analysis, 
+In general, best practice is that if you change any of the variables, best to just delete all the code-created folders (which can be done by deleting the relevant /repro folder(s) and the relevant /results folder) and run everything fresh. 
 
 
 Quirks
 ---
+
+Most of these are detailed elsewhere in the ReadMe, but here's a quick gathered list.
+
+* Generally, the only thing you will need to change when using the code on different galaxies are the `r50_all_gals` and `galdist` variables.
+* Similarly, the only thing you will need to change when using the code with a different filter or flux band are the `band_check` and `filter_check` variables.
+* The code only works if the galaxy of interest is at the aimpoint of the S3 chip (i.e. if it was the target of the observation).
+* The astrometry won't get updated correctly if there is more than one ASOL file attached to the .fits file. This would be a fairly quick fix in the code if it were to occur, but first I'd need to know the keywords for the extra ASOL files, which I don't. I haven't encountered any observations thus far that have multiple ASOL files, so this is unlikely to occur in the first place, though.
+* The number of expected background sources are only calculated for hard and soft band flux bands (`band_check` set to 2-10 and 0.5-2, respectively), as those are the only bands the relevant equation is defined for. Other bands will have NaN in this column in the results folder.
+* During the astrometry correcting, DS9 will pop up and open up a catalog. This is normal and supposed to happen. 
+* Sometimes during this DS9 will freeze (at least on my machine) and I've found that pressing the alt key will get it to unfreeze. No idea why, though.
+* The code is highly commented, so cruising through it might help you understand more what's going on.
 
 
 If something went wrong
@@ -98,68 +144,3 @@ If something went wrong
 	* Those region files are in pixel coordinates, so they will only display correctly when used on the Chandra image associated with that observation (such as the `new_evt2.fits` file).
 * The `fin_psf_srcs.bg.reg` and `fin_psf_srcs.src.reg` files have regions that look like they intersect, is the flux from the intersecting part being used in both sources/backgrounds?
 	* No, overlapping parts of source/background region files are excluded from calculations.
-
-
-
-
-
-# xray_code
-Python code with CIAO integration for analysis of Chandra X-ray images
-
---- Currently there is an error with CIAO's wcs_match function (used in the code to fix the astrometry) that causes a segfault when there are no matches between the source list and catalog source list. To (kind of) get by this, simply add the obsid of the problem galaxy to the skip_obsid_astrom variable AS A STRING and it should skip right over the use of the wcs_match function.
-
-
-GENERAL INFO--------------
-In order for this code to work you'll need to manually enter the Petrosian 50% light radius (r50) value for each galaxy - see the VARIABLES section in the code. You also have the option to add in the galaxy distances to calculate luminosities - if you do be sure to set galdist_flag to True to calculate them (see VARIABLES section). You will also need to specify the energy bands for filtering the final X-ray image and the energy bands to be used for calculating flux (see the VARIABLES section).
-
-You should put the folder containing this code in the directory containing all the obsid folders for your observations. Then, after changing the values of r50_all_gals (and galdist and galdist_flag if you want to calculate luminosities), as well as band_check and filter_check, you should just be able to run the code and it'll work. Note that the code checks to see whether time-intensive tasks (such as chandra_repro, fluximage, wavdetect, and srcflux) have already been run by checking to see if the folder exists - and if the folder exists it won't run it again. So if you have already run the code, and want to change parameters regarding those functions and have the code redo the functions, you'll have to delete the relevant folder (in the obsid directory):
--repro_.../		-  chandra_repro  (note doing this will basically have the code restart completely from zero)
--fixastrom_nogal/	-  astrometry-related fluximage and wavdetect (used to correct the astrometry)
--analysis/		-  analysis-related fluximage and wavdetect (used to find sources for analysis) 
--flux/			-  srcflux (finding the actual fluxes from the sources)
-
-Note that the repro/ folder will also have the flux band and filtering band in the title - e.g., if you're filtering the image at 2-7 keV and finding flux from 2-10 keV, the folder name will be "repro_2-10-band__2-7-filter". Also important - the code creates a results folder to store results in - the name varies depending on the specific band and filter, in exactly the same way as the repro folder. Before rerunning the code, you should also delete the relevant results folder generated by the first run of the code, or else things might end up messy with duplicate files and such. This can also be avoided by renaming that initial results folder e.g. to /results_old
-
-
-QUIRKS/TIPS---------------
--The only thing you need to change when using the code on different galaxies is the r50_all_gals and galdist variables.
--The only thing you need to change when using the code with a different filter or flux band is the band_check and filter_check variables.
--The code only works if the galaxy of interest is at the aimpoint of the S3 chip (i.e. if it was the target of the observation).
--The astrometry won't get updated correctly if there is more than one ASOL file. This would be a fairly quick fix in the code if it were to occur, though.
--The expected background sources are only calculated for hard and soft band fluxes (2-10 and 0.5-2 keV, respectively), as those are the only bands the relevant equation is defined for. Other bands will have NaN in this column in the results folder.
--Sometimes DS9 freezes (at least on my machine) e.g. while doing the astrometry matching. You can press the alt key to get it to unfreeze. No idea why.
--Read the entire readme file and at least the overview in the script, as they answer most questions. The code is also highly commented, so cruising through that might help you solve your issue as well.
-
-
-OUTPUT--------------------
-Everything of importance will go in the results folder. 
--galaxy_data.txt	-  information that only changes from galaxy to galaxy - e.g. astrometry-related information, how many good/bad sources there were
--params.txt		-  the specific values of the parameters used in the run of the code. SEE THE WARNING IN THIS FILE about changing time-intensive-task related parameters without deleting the corresponding folders.
--src_all.txt		-  all the information regarding specific sources - counts, net counts, information on source and backround apertures, etc.
--src_summary.txt	-  handpicked summary of the important information - net counts, fluxes, etc.
-
-The regions_and_images folder  -  This one needs some extra explanation. Multiple files are included for each galaxy that had sources found in it:
--fin_psf_srcs.bg.reg	-  the background regions used for the sources. Note that when a background region intersected with a source region, the intersection was excluded from the background region in calculations.
--fin_psf_srcs.src.reg	-  the source regions used to calculate the fluxes. Note that when multiple source regions intersected, the intersection was excluded from both source regions for calculations.
-	A note about these two region files - they will only work when used on the Chandra .fits file associated with that observation (such as the new_evt2.fits file) as the region file coords are in pixels.
--galaxy_region_ds9.reg	-  the galaxy region used - sources inside this region were excluded when matching found sources to catalog sources, and we only calculated fluxes for sources inside this region.
--new_evt2.fits		-  the X-ray image (filtered, cleaned, and astrometrically corrected) used to calculate fluxes
--xray_ds9_regions.reg	-  source positions with positional errors and names (in sky coordinates - use these if you want to put the sources on e.g. an HST image)
-
-
-
-OTHER--------------------
-The code follows along with the procedure regarding X-ray data in [this 2019 paper](https://arxiv.org/abs/1907.12585) and [this 2021 paper](https://arxiv.org/abs/2105.05876). We use Dickey & Lockman maps for our galactic column densities, and we use a power-law spectral model with a photon index of 1.8. For a more in-depth explanation, see the code. There's a brief overview at the top, and the code is divided into sections - under each section is a slightly more in-depth explanation of what's happening, and then the individual comments should explain in detail what's going on.
-
-Common issues/quirks are explained in the overview in the code.
-
-Rerunning - if you are rerunning the code on the same galaxies with the same flux and filtering bands (but with other parameters changed) you will need to delete the relevant repro/ folder and rerun the time-intensive tasks in order to get those parameters to actually take. In general, if you change any of the parameters, best practice is to delete the repro/ folder just in case and rerun the code from scratch.
-
-The source and background final regions (fin_psf_srcs.bg.reg and fin_psf_srcs.src.reg) will only display correctly on the Chandra image of the galaxy (new_evt2.fits), as they're in pixel coordinates and not sky coordinates. e.g. if you try to overlay those regions on an HST image in DS9, the regions won't be in the correct place.
-
-
-ADDING NEW BANDS--------------------
-
-If you want to add a new option to band_check, you'll need to ctrl+f and add an additional elif statement where it's called in the code. Additionally, you'll need to add another option to srcflux_band, which means you'll need to find the appropriate specific energy to use for the new band, which can most likely be found on the CIAO website.
-
-
