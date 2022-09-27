@@ -125,6 +125,7 @@ Most of these are detailed elsewhere in the ReadMe, but here's a quick gathered 
 * During the astrometry correcting, DS9 will pop up and open up a catalog. This is normal and supposed to happen. 
 * Sometimes during this DS9 will freeze (at least on my machine) and I've found that pressing the alt key will get it to unfreeze. No idea why, though.
 * The code is highly commented, so cruising through it might help you understand more what's going on.
+* Run times per galaxy can take 3-10 minutes, depending on how fast your computer is and whether there are any X-ray sources found in the galaxy or not.
 
 
 If something went wrong
