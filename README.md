@@ -11,7 +11,7 @@ Also -- currently there is an error with CIAO's `wcs_match` function (used in th
 Setup
 ---
 
-You will need to download and install the current version of [CIAO](https://cxc.cfa.harvard.edu/ciao/) (see the detailed installation instructions on their site). This script currently supports CIAO 4.14, which is the latest version as of time of writing.
+You will need to download and install the current version of [CIAO](https://cxc.cfa.harvard.edu/ciao/) (see the detailed installation instructions on their site). This script currently supports CIAO 4.14, which is the latest version as of time of writing. You will also need to place the folder containing `xray_flux.py` in the same directory as the individual OBSID folders for the observations you wish to analyze.
 
 
 Brief Rundown of the Code
