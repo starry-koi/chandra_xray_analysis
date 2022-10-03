@@ -1672,7 +1672,7 @@ for n in range(0,len(all_obsids)):
 	#We now make the summary file. We'll first just use information from all the sources, and then
 	#afterwards exclude any bad sources. We'll do this by putting everything in a pandas dataframe
 	#and then turn that dataframe into a string and save it to a file.
-	bad_src_ind = np.where(good_src_list == 1)[0] #for later use
+	bad_src_ind = np.where(np.asarray(good_src_list) == 0)[0] #for later use
 	num_good_srcs = len(good_src_list) - len(bad_src_ind) #for later use
 	flxref = '(' + str(1/flux_ref) + ')'
 	
