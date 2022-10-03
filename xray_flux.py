@@ -152,7 +152,7 @@ r50_all_gals = [8.05, 8.75, 7.85]
 galdist = [80.21, 122.78, 107.6]
 galdist_flag = True
 
-skip_obsid_astrom = ['25283'] #Due to wcs_match throwing errors, if any specific obsid makes the program
+skip_obsid_astrom = [] #Due to wcs_match throwing errors, if any specific obsid makes the program
 #stop due to a segfault during the astrometry fixing phase (specifically when matching sources
 #to catalog sources) just put the obsid in this list AS A STRING and it should skip the step
 #that's throwing errors.
