@@ -148,11 +148,11 @@ mult_hdrs 		= False
 
 #all values ordered from lowest obsid to highest
 #moved these variables up here from the galaxy-specific variables section for ease of use
-r50_all_gals = [1.76, 3.08, 1.08]
-galdist = [192.91, 134.85, 157.24]
+r50_all_gals = [8.05, 8.75, 7.85]
+galdist = [80.21, 122.78, 107.6]
 galdist_flag = True
 
-skip_obsid_astrom = [] #Due to wcs_match throwing errors, if any specific obsid makes the program
+skip_obsid_astrom = ['25283'] #Due to wcs_match throwing errors, if any specific obsid makes the program
 #stop due to a segfault during the astrometry fixing phase (specifically when matching sources
 #to catalog sources) just put the obsid in this list AS A STRING and it should skip the step
 #that's throwing errors.
@@ -1826,7 +1826,7 @@ os.chdir(code_directory+results_folder)
 
 #If we didn't want multiple headers then here we stick all the dataframes in the list together into
 #one big dataframe, and print that out to the file as a string.
-if mult_hdrs == False:
+if mult_hdrs == False and len(src_all_df_list) > 0:
 	all_df_tot = pd.concat(src_all_df_list)
 	all_df_tot_str = all_df_tot.to_string(justify='left',index=False)
 	all_file = open('src_all.txt','w')
@@ -1838,7 +1838,19 @@ if mult_hdrs == False:
 	summary_file = open('src_summary.txt','w')
 	summary_file.write(summary_df_tot_str)
 	summary_file.close()
+elif len(src_all_df_list) <= 0:
+	all_file = open('src_all.txt','w')
+	all_file.write("No X-ray sources found!")
+	all_file.close()
 
+	summary_file = open('src_summary.txt','w')
+	summary_file.write("No X-ray sources found!")
+	summary_file.close()
+
+#Quickly defining this flxref variable here. Previously, it was only defined in the for loop 
+#which led to problems if there were no xray sources detected in any galaxy (since no detected
+#sources meant skipping the rest of the for loop, so this variable never got defined).
+flxref = '(' + str(1/flux_ref) + ')'
 
 #Writing the galaxy info file. Note that the astrometry matching parameters a11,a12,a21,a22 only
 #matter if you're doing a method other than 'trans', hence the exclusion.
