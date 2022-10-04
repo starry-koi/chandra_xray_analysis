@@ -38,15 +38,20 @@ Variables the user will have to care about
 You will have to go into the code file to change the values of at least some of these variables depending on what galaxies you are analyzing and how you are analyzing them. Comments in `xray_flux.py` give more detail, with an overview given here.
 
 
-`r50_all_gals` - the Petrosian 50% light radius for each galaxy, in order of ascending OBSID. This, along with the `gal_exclude_rad` variable, is used to define the 'area of interest' around each galaxy that we'll use to decide what sources we want to analyze.
+* `r50_all_gals` 
+	* The Petrosian 50% light radius for each galaxy, in order of ascending OBSID. This, along with the `gal_exclude_rad` variable, is used to define the 'area of interest' around each galaxy that we'll use to decide what sources we want to analyze.
 
-`gal_exclude_rad` - The galaxy region (that 'area of interest') is defined by taking each galaxy's specific r50 value and multiplying it by this. Currently it's set to 3, such that the galaxy region we focus on has a radius of 3\*r50, which seems to work well.
+* `gal_exclude_rad` 
+	* The galaxy region (that 'area of interest') is defined by taking each galaxy's specific r50 value and multiplying it by this. Currently it's set to 3, such that the galaxy region we focus on has a radius of 3\*r50, which seems to work well.
 
-`galdist` and `galdist_flag` - Used to automatically find luminosities from calculated source fluxes, the first is a list of the distances to each galaxy (in Mpc) while the second tells the code whether or not you want it to find luminosities.
+* `galdist` and `galdist_flag` 
+	* Used to automatically find luminosities from calculated source fluxes, the first is a list of the distances to each galaxy (in Mpc) while the second tells the code whether or not you want it to find luminosities.
 
-`band_check` - which energy band (in keV) you want to find source fluxes in; e.g. 0.5-2, 2-10, etc.
+* `band_check`
+	* Which energy band (in keV) you want to find source fluxes in; e.g. 0.5-2, 2-10, etc.
 
-`filter_check` - which energy band (in keV) you want to filter the cleaned, corrected image by before finding and analyzing X-ray sources.
+* `filter_check`
+	* Which energy band (in keV) you want to filter the cleaned, corrected image by before finding and analyzing X-ray sources.
 
 
 There are a number of other variables detailed in the code that can be changed by the user, but I've found that they rarely need to be changed from galaxy to galaxy and project to project.
