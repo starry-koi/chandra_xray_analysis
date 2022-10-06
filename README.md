@@ -32,7 +32,7 @@ A more in-depth walkthrough is outlined in the header in the `xray_flux.py` code
 * Finally, we save the results in a created results folder specific to the filtering band and flux band (`filter_check` and `band_check` variables, respectively). This folder is located in the code folder.
 
 
-Variables the user will have to care about
+Variables the User Will Have to Care About
 ---
 
 You will have to go into the code file to change the values of at least some of these variables depending on what galaxies you are analyzing and how you are analyzing them. Comments in `xray_flux.py` give more detail, with an overview given here.
