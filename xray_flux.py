@@ -312,7 +312,7 @@ mult_hdrs 		= False				#All sources (from all the galaxies) are
 #this we have to specifically convert this to a float.
 with open('params.config', 'r') as paramfile:
 	
-	param_obj 		= cjson.load(paramfile)
+	json_obj 		= cjson.load(paramfile)
 	
 	skip_obsid_astrom	= json_obj['skip_obsid_astrom']
 	r50_all_gals 		= json_obj['r50_all_gals']
