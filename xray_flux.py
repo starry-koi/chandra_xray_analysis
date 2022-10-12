@@ -33,7 +33,7 @@ from distutils.util import strtobool
 
 ### Quirks and possible issues ###
 
-- Read the readme file as well as this header.
+- Read the Readme file as well as this header.
 
 - Need to have the folder containing this code (folder chandra_xray_analysis) in the same directory as the 
   obsids. Because what this code does is start in the chandra_xray_analysis directory, then go up one
