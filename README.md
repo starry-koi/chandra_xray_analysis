@@ -5,7 +5,7 @@ Analysis of Chandra X-ray images via python code with CIAO integration. Finds th
 
 Be sure to read the 'Rerunning the Code' section - there's an important warning there that if not heeded could mess up your analysis.
 
-Also -- currently there is an error with CIAO's `wcs_match` function (used in the code to fix the astrometry) that causes a segfault when there are no matches between the source list and catalog source list. To (kind of) get by this, simply add the obsid of the problem galaxy to the `skip_obsid_astrom` variable as a string or int and it should skip right over the use of the `wcs_match` function for that galaxy. Note that this means the astrometry won't be changed for the galaxy, though since the bug should only be happening when there were no matches between our found sources and the catalog sources, this should be alright.
+Also -- currently there is an error with CIAO's `wcs_match` function (used in the code to fix the astrometry) that causes a segfault or just simply fails to output any results when there are no matches between the source list and catalog source list. To (kind of) get by this, simply add the obsid of the problem galaxy to the `skip_obsid_astrom` variable as a string or int and it should skip right over the use of the `wcs_match` function for that galaxy. Note that this means the astrometry won't be changed for the galaxy, though since the bug should only be happening when there were no matches between our found sources and the catalog sources, this should be alright.
 
 
 Setup
