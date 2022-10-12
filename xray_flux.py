@@ -14,15 +14,17 @@ import collections
 import warnings
 import pandas as pd
 import subprocess as sp
+import commentjson as cjson
 from sh import gunzip
 from astropy.io import fits
 from astropy.coordinates import SkyCoord
 from astropy import units as u
 from decimal import Decimal
+from distutils.util import strtobool
 
 #Author: Lilikoi Latimer
 #Created October 2019
-#Updated September 2022
+#Updated October 2022
 #Currently works under CIAO 4.14
 
 '''
@@ -33,21 +35,23 @@ from decimal import Decimal
 
 - Read the readme file as well as this header.
 
-- Need to have the folder containing this code (folder xray_flux_code) in the same directory as the 
-  obsids. Because what this code does is start in the xray_flux_code directory, then go up one
+- Need to have the folder containing this code (folder chandra_xray_analysis) in the same directory as the 
+  obsids. Because what this code does is start in the chandra_xray_analysis directory, then go up one
   directory, then go into a specific obsid directory.
 
 - Only works if the galaxy we care about is at the aimpoint of the S3 chip i.e. the telescope was
   pointed right at the galaxy.
 
 - Will need to MANUALLY set the bands and filtering bands (band_check and filter_check in the 
-  VARIABLES section) to appropriate bands. filter_check will be used to filter the final image, and 
-  band_check will be used to determine what energy band to calculate flux for.
+  VARIABLES section, though you will need to set them in the params.config file) to appropriate bands. 
+  filter_check will be used to filter the final image, and band_check will be used to determine what 
+  energy band to calculate flux for.
 
 - Have to MANUALLY set the Petrosian 50% light radii for each galaxy (r50_all_gals, see VARIABLES 
   section). Can also set the distance to the galaxies, in Mpc (galdist) and galdist_flag to True if
   you want to calculate the log luminosities as well. Everything else should run reasonable well if
-  just left as-is (at least for finding AGN).
+  just left as-is (at least for finding AGN). All variables are now declared in the params.config file,
+  though the VARIABLES section still explains what each variable does.
 
 - Different band_check and filter_check will store files in different directories in the OBSID folders,
   appropriately labelled, so you will only need to delete folders and rerun code if you're trying to
@@ -80,7 +84,7 @@ from decimal import Decimal
 - At the moment, wcs_match (the CIAO function) appears to be throwing errors and segfaults when there
   are zero matches between source list and catalog list. This can occasionally stop the code in the
   astrometry-fixing section. As a quick fix, I've thrown in a variable skip_obsid_astrom, which, if
-  you put the obsid of the problem-causing galaxy in AS A STRING then should skip right over the 
+  you put the obsid of the problem-causing galaxy in as a string or int then it should skip right over the 
   problem section and allow you to get fluxes and everything. Hopefully CIAO fixes this soon though.
 
 ### Broad Overview ###
@@ -115,6 +119,7 @@ Finally, we save the results. We write a summary file on all the sources we've f
 '''
 Defaults of:
 
+skip_obsid_astrom	= [specific to the galaxies]
 r50_all_gals 		= [specific to the galaxies]
 galdist 		= [specific to the galaxies]
 galdist_flag 		= True 
@@ -130,7 +135,6 @@ astrom_match_residlim 	= 2
 astrom_match_method 	= 'trans'
 min_matches 		= 1
 bin_time_var 		= 200
-fluximage_spec_energy 	= 4
 fluximage_psfecf 	= 0.393
 wavdet_analysis_scales 	= '1.0 1.4 2.0 2.8 4.0'
 analysis_psfecf 	= 0.9
@@ -146,15 +150,16 @@ mult_hdrs 		= False
 '''
 
 
-#all values ordered from lowest obsid to highest
-#moved these variables up here from the galaxy-specific variables section for ease of use
-r50_all_gals = [8.05, 8.75, 7.85]
-galdist = [80.21, 122.78, 107.6]
-galdist_flag = True
 
+#We used to declare all the variables here in the script. The variables/parameters have since been
+#moved to the params.config file, and we just read the values in from that. The following
+#commented-out section was kept so that definitions of all the variables could still be found 
+#in the actual code (which is useful when editing the code, for example).
+
+'''
 skip_obsid_astrom = [] #Due to wcs_match throwing errors, if any specific obsid makes the program
 #stop due to a segfault during the astrometry fixing phase (specifically when matching sources
-#to catalog sources) just put the obsid in this list AS A STRING and it should skip the step
+#to catalog sources) just put the obsid in this list as a string or int and it should skip the step
 #that's throwing errors.
 
 ######## Energy-range related variables - may need to be changed between runs ##########
@@ -166,19 +171,6 @@ band_check = '2-10'					#This determines what energy band the
 							#'0.5-7'
 							#'0.5-8'
 							#'2-10'
-
-if band_check == '0.5-2':				#The band and specific energy to use when
-	srcflux_band = '0.5:2:1.56' #soft		#calculating fluxes. It's of the form
-elif band_check == '0.5-7':				#(lower):(upper):(specific_energy), with
-	srcflux_band = '0.5:7:2.3' #broad		#everything in keV. Since the specific
-elif band_check == '0.5-8':				#energy changes depending on which band is
-	srcflux_band = '0.5:8:2.3' #~broad		#used, it seemed easier to just do if 
-elif band_check == '2-10':				#statements then letting it be user-driven.
-	srcflux_band = '2:10:4' #hard			#If you add a new energy band, you'll need
-else:							#to update this part as well.
-	print("band_check variable not recognized")
-	sys.exit()
-
 
 filter_check = '0.5-7'					#Filters the adjusted and cleaned x-ray
 							#image that we use to find the final sources
@@ -308,7 +300,62 @@ mult_hdrs 		= False				#All sources (from all the galaxies) are
 							#to reprint the column headers (counts, flux,
 							#etc.) each time a new galaxy's worth of 
 							#sources is added to the file.
+'''
 
+
+#Import all the variables from the params.config file. There are two variables (galdist_flag and 
+#mult_hdrs) that are True/False variables, so we have to do a bit extra to properly convert these to 
+#actual True/False values, since normally the json importing thing would just leave us with a string
+#of 'True' or 'False instead of actual boolean True or False. Additionally, flux_ref is generally set
+#to a number in scientific notation e.g. 1e15. Normally when loading this from the paramfile this would
+#result in flux_ref = '1e15', i.e. importing the value as a string rather than a number. To counteract
+#this we have to specifically convert this to a float.
+with open('params.config', 'r') as paramfile:
+	
+	param_obj 		= cjson.load(paramfile)
+	
+	skip_obsid_astrom	= json_obj['skip_obsid_astrom']
+	r50_all_gals 		= json_obj['r50_all_gals']
+	galdist 		= json_obj['galdist']
+	galdist_flag 		= bool(strtobool(json_obj['galdist_flag']))
+	band_check		= json_obj['band_check']
+	filter_check		= json_obj['filter_check']
+	coord_frame 		= json_obj['coord_frame']
+	gal_exclude_rad 	= json_obj['gal_exclude_rad']
+	fluxim_astrom_psfecf 	= json_obj['fluxim_astrom_psfecf']
+	wavdet_astrom_scales 	= json_obj['wavdet_astrom_scales']
+	catalog_filter 		= json_obj['catalog_filter']
+	astrom_match_radius 	= json_obj['astrom_match_radius']
+	astrom_match_residlim 	= json_obj['astrom_match_residlim']
+	astrom_match_method 	= json_obj['astrom_match_method']
+	min_matches 		= json_obj['min_matches']
+	bin_time_var 		= json_obj['bin_time_var']
+	fluximage_psfecf 	= json_obj['fluximage_psfecf']
+	wavdet_analysis_scales 	= json_obj['wavdet_analysis_scales']
+	analysis_psfecf 	= json_obj['analysis_psfecf']
+	analysis_energy 	= json_obj['analysis_energy']
+	bg_radius_factor 	= json_obj['bg_radius_factor']
+	srcflux_PhoIndex	= json_obj['srcflux_PhoIndex']
+	minflux_counts 		= json_obj['minflux_counts']
+	minflux_bgcounts 	= json_obj['minflux_bgcounts']
+	ds9_reg_color 		= json_obj['ds9_reg_color']
+	round_dec 		= json_obj['round_dec']
+	flux_ref 		= float(json_obj['flux_ref'])
+	mult_hdrs 		= bool(strtobool(json_obj['mult_hdrs']))
+
+
+#Quickly getting the srcflux band, which includes both the band and the specific energy.
+if band_check == '0.5-2':				#The band and specific energy to use when
+	srcflux_band = '0.5:2:1.56' #soft		#calculating fluxes. It's of the form
+elif band_check == '0.5-7':				#(lower):(upper):(specific_energy), with
+	srcflux_band = '0.5:7:2.3' #broad		#everything in keV. Since the specific
+elif band_check == '0.5-8':				#energy changes depending on which band is
+	srcflux_band = '0.5:8:2.3' #~broad		#used, it seemed easier to just do if 
+elif band_check == '2-10':				#statements then letting it be user-driven.
+	srcflux_band = '2:10:4' #hard			#If you add a new energy band, you'll need
+else:							#to update this part as well.
+	print("band_check variable not recognized")
+	sys.exit()
 
 #Checking that the band_check and filter_check aren't horribly mismatched
 if filter_check == '0.5-2':
@@ -359,7 +406,7 @@ sp.run(["mkdir", "-p", code_directory + results_folder + "/cleaned_lightcurves"]
 os.chdir('..') #going up a directory
 all_obsids = next(os.walk('.'))[1] #get list of obsids
 all_obsids.sort()
-all_obsids = all_obsids[:-1] #as os.walk gets the xray_flux_code dir too, so we delete that entry
+all_obsids = all_obsids[:-1] #as os.walk gets the chandra_xray_analysis dir too, so we delete that entry
 original_directory = os.getcwd()
 
 
@@ -668,6 +715,8 @@ for n in range(0,len(all_obsids)):
 	#of obsids to skip the astrometry on. This works not terribly because the wcs_match
 	#errors only happen when there are no matches anyways, so setting the nmatches to
 	#zero shouldn't hurt much.
+	#We also turn the skip_obsid_astrom list into a list of strings.
+	skip_obsid_astrom = [str(a) for a in skip_obsid_astrom]
 	if obsid not in skip_obsid_astrom:
 		wcs_match.punlearn() #just in case
 		sp.run(["punlearn", "wcs_match"]) #also just in case

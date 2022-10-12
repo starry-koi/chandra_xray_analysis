@@ -5,7 +5,7 @@ Analysis of Chandra X-ray images via python code with CIAO integration. Finds th
 
 Be sure to read the 'Rerunning the Code' section - there's an important warning there that if not heeded could mess up your analysis.
 
-Also -- currently there is an error with CIAO's `wcs_match` function (used in the code to fix the astrometry) that causes a segfault when there are no matches between the source list and catalog source list. To (kind of) get by this, simply add the obsid of the problem galaxy to the `skip_obsid_astrom` variable *as a string* and it should skip right over the use of the `wcs_match` function for that galaxy. Note that this means the astrometry won't be changed for the galaxy, though since the bug should only be happening when there were no matches between our found sources and the catalog sources, this should be alright.
+Also -- currently there is an error with CIAO's `wcs_match` function (used in the code to fix the astrometry) that causes a segfault when there are no matches between the source list and catalog source list. To (kind of) get by this, simply add the obsid of the problem galaxy to the `skip_obsid_astrom` variable as a string or int and it should skip right over the use of the `wcs_match` function for that galaxy. Note that this means the astrometry won't be changed for the galaxy, though since the bug should only be happening when there were no matches between our found sources and the catalog sources, this should be alright.
 
 
 Setup
@@ -35,7 +35,7 @@ A more in-depth walkthrough is outlined in the header in the `xray_flux.py` code
 Variables the User Will Have to Care About
 ---
 
-You will have to go into the code file to change the values of at least some of these variables depending on what galaxies you are analyzing and how you are analyzing them. Comments in `xray_flux.py` give more detail, with an overview given here.
+All variables are declared (and explained) in the `params.config` file, and you will have to go into this file to change the values of at least some of these variables depending on what galaxies you are analyzing and how you are analyzing them. Comments in `params.config` give more detail, with an overview given here.
 
 
 * `r50_all_gals` 
@@ -45,7 +45,7 @@ You will have to go into the code file to change the values of at least some of 
 	* The galaxy region (that 'area of interest') is defined by taking each galaxy's specific r50 value and multiplying it by this. Currently it's set to 3, such that the galaxy region we focus on has a radius of 3\*r50, which seems to work well.
 
 * `galdist` and `galdist_flag` 
-	* Used to automatically find luminosities from calculated source fluxes, the first is a list of the distances to each galaxy (in Mpc) while the second tells the code whether or not you want it to find luminosities.
+	* Used to automatically find luminosities from calculated source fluxes, the first is a list of the distances to each galaxy (in Mpc, inorder of ascending OBSID) while the second tells the code whether or not you want it to find luminosities.
 
 * `band_check`
 	* Which energy band (in keV) you want to find source fluxes in; e.g. 0.5-2, 2-10, etc.
@@ -60,7 +60,7 @@ There are a number of other variables detailed in the code that can be changed b
 A Sample Walkthrough of a Code Run
 ---
 
-Download your OBSIDs from the [Chandra Data Archive](https://cda.harvard.edu/chaser/) and make sure that the galaxies you want to analyze were the actual targets of the Chandra observations by checking the RA and Dec in the pdfs in each OBSID folder. Place the folder containing `xray_flux.py` in the same directory as the individual OBSID folders. Go into the `xray_flux.py` script and update the `r50_all_gals` and `galdist` variables, making sure the `galdist_flag` variable is set to True. Check that the `band_check` and `filter_check` variables are set to the desired energy ranges.
+Download your OBSIDs from the [Chandra Data Archive](https://cda.harvard.edu/chaser/) and make sure that the galaxies you want to analyze were the actual targets of the Chandra observations by checking the RA and Dec in the pdfs in each OBSID folder. Place the folder containing `xray_flux.py` in the same directory as the individual OBSID folders. Go into the `params.config` file and update the `r50_all_gals` and `galdist` variables, making sure the `galdist_flag` variable is set to True. Check that the `band_check` and `filter_check` variables are set to the desired energy ranges.
 
 Once everything is set up, open a terminal in the code directory and initialize CIAO, then run the code as
 
@@ -136,12 +136,12 @@ Most of these are detailed elsewhere in the ReadMe, but here's a quick gathered 
 If something went wrong
 ---
 
-* The code just stopped around the "Matching wavdetect and catalog sources" step
+* The code just stopped around the "Matching wavdetect and catalog sources" step, possibly with an error that reads like: "AttributeError: 'NoneType' object has no attribute 'group'"
 	* Currently there's a bug with the CIAO `wcs_match` function and sometimes it fails and throws out a segfault that stops the code. This should only be happening when there were no matches between our found sources and the catalog sources. I've implemented a workaround - you can put the OBSID of the problem galaxy to the `skip_obsid_astrom` variable (as a string) to tell the code to skip running the `wcs_match` function.
 * I got an 'out of bounds' error for the `r50_all_gals` variable 
 	* Likely forgot to update the r50 values to match with the OBSIDs you downloaded. Need to have one r50 value per OBSID.
 * DS9 popped up and froze and the code timed out
-	* Sometimes DS9 just freezes, which is annoying. I've found that pressing the alt key gets DS9 to unfreeze so the code can proceed.
+	* Sometimes DS9 just freezes, which is annoying. I've found that pressing the alt key gets DS9 to unfreeze so the code can proceed. This can also usually be dealt with by just rerunning the code, if it's already timed out (though note you may need to delete the /fixastrom_nogal folder in order to get the code to redo everything it needs to).
 * Error popped up saying something was wrong with 'from ciao_contrib.runtool import \*'
 	* Likely forgot to initialize CIAO before running the code. 
 * There are NaN values in the "expected background sources" column of the text files in the results folder
