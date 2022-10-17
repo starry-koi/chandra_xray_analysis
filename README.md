@@ -5,7 +5,7 @@ Analysis of Chandra X-ray images via python code with CIAO integration. Finds th
 
 Be sure to read the 'Rerunning the Code' section - there's an important warning there that if not heeded could mess up your analysis.
 
-Also -- currently there is an error with CIAO's `wcs_match` function (used in the code to fix the astrometry) that causes a segfault or just simply fails to output any results when there are no matches between the source list and catalog source list. To (kind of) get by this, simply add the obsid of the problem galaxy to the `skip_obsid_astrom` variable as a string or int and it should skip right over the use of the `wcs_match` function for that galaxy. Note that this means the astrometry won't be changed for the galaxy, though since the bug should only be happening when there were no matches between our found sources and the catalog sources, this should be alright.
+Also -- currently there is an error with CIAO's `wcs_match` function (used in the code to fix the astrometry) that causes a segfault or just simply fails to output any results when there are no matches between the source list and catalog source list. To (kind of) get by this, simply add the obsid of the problem galaxy to the `skip_obsid_astrom` variable as a string or int and it should skip right over the use of the `wcs_match` function for that galaxy. Note that this means the astrometry won't be changed for the galaxy.
 
 
 Setup
@@ -137,7 +137,7 @@ If something went wrong
 ---
 
 * The code just stopped around the "Matching wavdetect and catalog sources" step, possibly with an error that reads like: "AttributeError: 'NoneType' object has no attribute 'group'"
-	* Currently there's a bug with the CIAO `wcs_match` function and sometimes it fails and throws out a segfault that stops the code. This should only be happening when there were no matches between our found sources and the catalog sources. I've implemented a workaround - you can put the OBSID of the problem galaxy to the `skip_obsid_astrom` variable (as a string) to tell the code to skip running the `wcs_match` function.
+	* Currently there's a bug with the CIAO `wcs_match` function and sometimes it fails and throws out a segfault that stops the code. This should only be happening when there were no matches between our found sources and the catalog sources, however sometimes this isn't true - you can check the logfile at `/[OBSID]/repro_.../fixastrom_nogal/wcsmatch_log.txt`. I've implemented a workaround - you can put the OBSID of the problem galaxy to the `skip_obsid_astrom` variable (as a string) to tell the code to skip running the `wcs_match` function.
 * I got an 'out of bounds' error for the `r50_all_gals` variable 
 	* Likely forgot to update the r50 values to match with the OBSIDs you downloaded. Need to have one r50 value per OBSID.
 * DS9 popped up and froze and the code timed out
