@@ -1866,7 +1866,8 @@ for n in range(0,len(all_obsids)):
 	#variable of the name, for cleanliness.
 	ds9_srcs_out = reg.Regions(ds9_srcs)
 	ds9_srcs_filename = obsid+'_'+temp_galname+'_xray_ds9_regions.reg'
-	ds9_srcs_out.write(ds9_srcs_filename, format='ds9', overwrite=True)
+	if len(ds9_srcs_out) > 0:
+		ds9_srcs_out.write(ds9_srcs_filename, format='ds9', overwrite=True)
 
 
 #We first cd into the proper directory.
