@@ -988,7 +988,7 @@ for n in range(0,len(all_obsids)):
 	
 	if filter_check == '0.5-2':
 		fluximage.bands = '0.5:2:1.56'
-	if filter_check == '0.5-7':
+	elif filter_check == '0.5-7':
 		fluximage.bands	= '0.5:7:2.3'
 	elif filter_check == '2-7':
 		fluximage.bands	= '2:7:4'
